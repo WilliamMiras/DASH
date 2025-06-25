@@ -1,9 +1,13 @@
-from langchain_community.tools import DuckDuckGoSearchRun
-from langchain.tools import Tool
 
-search = DuckDuckGoSearchRun()
+from langchain_community.utilities import SerpAPIWrapper
+from langchain_community.tools import Tool
+from dotenv import load_dotenv
+
+load_dotenv()
+
+search = SerpAPIWrapper()
 search_tool = Tool(
-    name="search",
+    name="serpapi_search",
     func=search.run,
-    description="A tool to search the web using DuckDuckGo. Useful for finding information about datasets, models, and more recent topics. Input should be a search query."
+    description="A tool to search the web for datasets. Input should be a search query related to datasets, data science, or machine learning."
 )

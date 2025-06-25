@@ -3,5 +3,6 @@ langchain-community
 langchain-openai
 python-dotenv
 pydantic
-duckduckgo-search
+serpapi
 langmem
+google-search-results
