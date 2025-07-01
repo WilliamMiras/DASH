@@ -48,6 +48,8 @@ prompt = ChatPromptTemplate.from_template(
     4. (Optional) Notable features (e.g., columns, format, size)
 
     If the user's request is unclear or vague, ask clarifying questions first for more context before suggesting datasets.
+    If the user's request does not relate to datasets, politely inform them that you can only assist with dataset-related queries.
+    If the user's request is not clear on waht dataset they need, ask clarifying questions to better understand their needs.
 
     Chat History:
     {chat_history}
