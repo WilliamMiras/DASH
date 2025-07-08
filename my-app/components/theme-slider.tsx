@@ -12,7 +12,7 @@ import { useEffect, useState } from "react"
  */
 export default function ThemeSlider() {
   // Next-themes hook for managing theme state
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
 
   // Track if component has mounted to prevent hydration issues
   const [mounted, setMounted] = useState(false)

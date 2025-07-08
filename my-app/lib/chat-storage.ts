@@ -1,12 +1,16 @@
+// types.ts or top of the same file
+
+export interface ChatMessage {
+  id: string
+  role: "user" | "assistant"
+  content: string
+  createdAt: Date
+}
+
 export interface ChatSession {
   id: string // Unique identifier for the session
   title: string // Display title generated from first message
-  messages: Array<{
-    id: string
-    role: "user" | "assistant"
-    content: string
-    createdAt: Date
-  }>
+  messages: ChatMessage[]
   createdAt: Date // When the session was first created
   updatedAt: Date // When the session was last modified
 }
@@ -33,21 +37,26 @@ export class ChatStorage {
    * Returns empty array if no sessions exist or on error
    */
   static getSessions(): ChatSession[] {
-    // Return empty array on server-side rendering
     if (typeof window === "undefined") return []
 
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY)
       if (!stored) return []
 
-      const sessions = JSON.parse(stored)
+      type RawChatMessage = Omit<ChatMessage, "createdAt"> & { createdAt: string }
+      type RawChatSession = Omit<ChatSession, "createdAt" | "updatedAt" | "messages"> & {
+        createdAt: string
+        updatedAt: string
+        messages: RawChatMessage[]
+      }
 
-      // Convert date strings back to Date objects
-      return sessions.map((session: any) => ({
+      const sessions = JSON.parse(stored) as RawChatSession[]
+
+      return sessions.map((session) => ({
         ...session,
         createdAt: new Date(session.createdAt),
         updatedAt: new Date(session.updatedAt),
-        messages: session.messages.map((msg: any) => ({
+        messages: session.messages.map((msg) => ({
           ...msg,
           createdAt: new Date(msg.createdAt),
         })),
@@ -64,7 +73,6 @@ export class ChatStorage {
    * Maintains session limit by removing oldest sessions
    */
   static saveSession(session: ChatSession): void {
-    // Skip on server-side rendering
     if (typeof window === "undefined") return
 
     try {
@@ -72,17 +80,13 @@ export class ChatStorage {
       const existingIndex = sessions.findIndex((s) => s.id === session.id)
 
       if (existingIndex >= 0) {
-        // Update existing session
         sessions[existingIndex] = session
       } else {
-        // Add new session to beginning of array (most recent first)
         sessions.unshift(session)
       }
 
-      // Keep only the most recent sessions to prevent localStorage bloat
       const trimmedSessions = sessions.slice(0, this.MAX_SESSIONS)
 
-      // Save back to localStorage
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(trimmedSessions))
     } catch (error) {
       console.error("Error saving chat session:", error)
@@ -94,16 +98,11 @@ export class ChatStorage {
    * Removes session from localStorage by ID
    */
   static deleteSession(sessionId: string): void {
-    // Skip on server-side rendering
     if (typeof window === "undefined") return
 
     try {
       const sessions = this.getSessions()
-
-      // Filter out the session to delete
       const filteredSessions = sessions.filter((s) => s.id !== sessionId)
-
-      // Save updated sessions back to localStorage
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filteredSessions))
     } catch (error) {
       console.error("Error deleting chat session:", error)

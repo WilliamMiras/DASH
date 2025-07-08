@@ -155,7 +155,7 @@ export default function AIAgentInterface() {
                         Welcome to DASH
                       </h3>
                       <p className="text-slate-600 dark:text-slate-400 mt-2 theme-text">
-                        Tell me about your project and dataset needs and I'll find the best dataset to help you get
+                        Tell me about your project and dataset needs and I&apos;ll find the best dataset to help you get
                         started.
                       </p>
                     </div>
