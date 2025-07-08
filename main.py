@@ -10,9 +10,6 @@ from tools import search_tool
 
 load_dotenv()
 
-# Toggle structured output for the agent for testing purposes
-USE_STRUCTURED_OUTPUT = False
-
 #Define the memory for the agent
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
@@ -85,15 +82,12 @@ if __name__ == "__main__":
 
     raw_response = agent_executor.invoke({"query": query})
 
-    if USE_STRUCTURED_OUTPUT:
-        try:
-            structured_response = parser.parse(raw_response["output"])
-            print("\n📊 Here's a dataset summary I found:")
-            print(structured_response)
-        except Exception as e:
-            print("\n⚠️ Error parsing response:", e)
-            print("\nRaw response:", raw_response["output"])
-            structured_response = None
-    else:
-        print("\n🧾 Here's what I found:")
-        print(raw_response["output"])
+    try:
+        structured_response = parser.parse(raw_response["output"])
+        print("\n📊 Here's a dataset summary I found:")
+        print(structured_response)
+    except Exception as e:
+        print("\n⚠️ Error parsing response:", e)
+        print("\nRaw response:", raw_response["output"])
+        structured_response = None
+
