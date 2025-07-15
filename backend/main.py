@@ -1,4 +1,4 @@
-# This code is part of the DASH (Dataset Assistant for Science and Humanities) project.
+# This code is part of the DASH (Data and Analysis Scout Hub) project.
 import os
 #from fastapi import FastAPI
 from pydantic import BaseModel
