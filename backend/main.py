@@ -1,4 +1,5 @@
-from dotenv import load_dotenv
+# This code is part of the DASH (Dataset Assistant for Science and Humanities) project.
+import os
 #from fastapi import FastAPI
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
@@ -6,9 +7,15 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.memory import ConversationBufferMemory
-from tools import search_tool
+from backend.tools import search_tool
 
-load_dotenv()
+
+open_api_key = os.environ["OPEN_API_KEY"]
+langsmith_api_key = os.environ["LANGSMITH_API_KEY"]
+langsmith_endpoint = os.environ["LANGSMITH_ENDPOINT"]
+langsmith_project = os.environ["LANGSMITH_PROJECT"]
+langsmith_tracing = os.environ["LANGSMITH_TRACING"]
+serpapi_api_key = os.environ["SERPAPI_API_KEY"]
 
 #Define the memory for the agent
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
