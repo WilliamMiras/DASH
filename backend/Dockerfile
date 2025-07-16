@@ -12,3 +12,7 @@ COPY lambda_function.py main.py tools.py ${LAMBDA_TASK_ROOT}/
 
 # Set the CMD to your Lambda handler
 CMD ["lambda_function.lambda_handler"]
+
+# Uncomment the following line if you want to run the FastAPI app directly
+# This is useful for local development but not needed in Lambda
+#CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080"]

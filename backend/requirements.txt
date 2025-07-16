@@ -6,3 +6,5 @@ pydantic
 serpapi
 langmem
 google-search-results
+fastapi
+uvicorn
