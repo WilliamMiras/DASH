@@ -1,7 +1,11 @@
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { query } = await req.json();
+  const body = await req.json();
+  // Try to extract the user input from different possible keys
+  const query = body.query || body.input || (body.messages && body.messages[body.messages.length - 1]?.content) || "";
+
+  console.log("Received in route.ts:", body, "Extracted query:", query);
 
   const response = await fetch(process.env.NEXT_PUBLIC_DASH_BACK_API!, {
     method: "POST",
