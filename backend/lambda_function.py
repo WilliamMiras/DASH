@@ -1,4 +1,4 @@
-from backend.main import agent_executor, parser
+from .main import agent_executor, parser
 import json
 
 def lambda_handler(event, context):
