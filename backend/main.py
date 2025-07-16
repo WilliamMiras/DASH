@@ -6,8 +6,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain_core.memory import ConversationBufferMemory
-from langchain_core.messages import ChatMessageHistory
+from langchain.memory import ConversationBufferMemory
+from langchain.memory import ChatMessageHistory
 from tools import search_tool
 
 
