@@ -28,7 +28,8 @@ def lambda_handler(event, context):
 
         return {
             "statusCode": 200,
-            "body": json.dumps(structured_response.dict())
+            "body": json.dumps(structured_response.dict()),
+            "headers": {"Content-Type": "application/json"}
         }
 
     except Exception as e:
@@ -38,6 +39,7 @@ def lambda_handler(event, context):
             "body": json.dumps({
                 "error": str(e),
                 "message": "An error occurred while processing your request."
-            })
+            }),
+            "headers": {"Content-Type": "application/json"}
         }
 
