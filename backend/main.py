@@ -10,7 +10,7 @@ from langchain.memory import ConversationBufferMemory
 from tools import search_tool
 
 
-open_api_key = os.environ["OPEN_API_KEY"]
+openai_api_key = os.environ["OPENAI_API_KEY"]
 langsmith_api_key = os.environ["LANGSMITH_API_KEY"]
 langsmith_endpoint = os.environ["LANGSMITH_ENDPOINT"]
 langsmith_project = os.environ["LANGSMITH_PROJECT"]
