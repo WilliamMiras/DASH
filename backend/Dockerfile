@@ -8,7 +8,7 @@ RUN pip install --upgrade pip && \
     pip install -r ${LAMBDA_TASK_ROOT}/requirements.txt
 
 # Copy all source code files
-COPY lambda_function.py main.py tools.py ${LAMBDA_TASK_ROOT}/
+COPY . ${LAMBDA_TASK_ROOT}/
 
 # Set the CMD to your Lambda handler
 CMD ["lambda_function.lambda_handler"]
