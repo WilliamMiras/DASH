@@ -6,7 +6,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain.memory import ConversationBufferMemory
+from langchain_core.memory import ConversationBufferMemory
+from langchain_core.messages import ChatMessageHistory
 from tools import search_tool
 
 
@@ -18,7 +19,8 @@ langsmith_tracing = os.environ["LANGSMITH_TRACING"]
 serpapi_api_key = os.environ["SERPAPI_API_KEY"]
 
 #Define the memory for the agent
-memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+chat_history = ChatMessageHistory()
+memory = ConversationBufferMemory(chat_memory=chat_history, return_messages=True)
 
 class DataQuery(BaseModel):
     #title: str
