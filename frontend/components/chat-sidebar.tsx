@@ -23,12 +23,15 @@ interface ChatSidebarProps {
  * Displays a list of previous chat sessions with the ability to:
  * - View and select previous conversations
  * - Create new chats
- * - Delete existing chats with confirmation
+ * - Delete existing chats with confirmation and animations
  * - Show session metadata (title, timestamp, message count)
  */
 export default function ChatSidebar({ currentSessionId, onSessionSelect, onNewChat }: ChatSidebarProps) {
   // State to store all chat sessions
   const [sessions, setSessions] = useState<ChatSession[]>([])
+
+  // State to track sessions being deleted (for animation)
+  const [deletingSessions, setDeletingSessions] = useState<Set<string>>(new Set())
 
   // State for delete confirmation dialog
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -99,19 +102,32 @@ export default function ChatSidebar({ currentSessionId, onSessionSelect, onNewCh
   }
 
   /**
-   * Handle confirmed deletion of a chat session
-   * Removes session from storage and starts new chat if current session was deleted
+   * Handle confirmed deletion of a chat session with animation
+   * Animates the removal before actually deleting from storage
    */
   const handleConfirmDelete = () => {
     if (deleteDialog.sessionId) {
-      // Remove session from storage
-      ChatStorage.deleteSession(deleteDialog.sessionId)
-      refreshSessions()
+      // Start deletion animation
+      setDeletingSessions((prev) => new Set(prev).add(deleteDialog.sessionId!))
 
-      // If we're deleting the current session, start a new chat
-      if (deleteDialog.sessionId === currentSessionId) {
-        onNewChat()
-      }
+      // Wait for animation to complete before actually deleting
+      setTimeout(() => {
+        // Remove session from storage
+        ChatStorage.deleteSession(deleteDialog.sessionId!)
+        refreshSessions()
+
+        // Clear from deleting set
+        setDeletingSessions((prev) => {
+          const newSet = new Set(prev)
+          newSet.delete(deleteDialog.sessionId!)
+          return newSet
+        })
+
+        // If we're deleting the current session, start a new chat
+        if (deleteDialog.sessionId === currentSessionId) {
+          onNewChat()
+        }
+      }, 300) // Match the animation duration
     }
   }
 
@@ -157,6 +173,7 @@ export default function ChatSidebar({ currentSessionId, onSessionSelect, onNewCh
                   size="sm"
                   variant="outline"
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 border-red-200 dark:border-red-800 transition-all duration-300 hover:scale-105 bg-transparent"
+                  disabled={deletingSessions.has(currentSessionId)}
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
                   Delete
@@ -189,55 +206,112 @@ export default function ChatSidebar({ currentSessionId, onSessionSelect, onNewCh
                 </p>
               </div>
             ) : (
-              // List of chat sessions
+              // List of chat sessions with animations
               <div className="space-y-1">
-                {sessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className={cn(
-                      "group relative flex items-start p-3 rounded-lg cursor-pointer transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-[1.02]",
-                      // Highlight current session
-                      currentSessionId === session.id &&
-                        "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 scale-[1.02]",
-                    )}
-                    onClick={() => onSessionSelect(session)}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        {/* Session title */}
-                        <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate pr-2 theme-text">
-                          {session.title}
-                        </h3>
+                {sessions.map((session) => {
+                  const isDeleting = deletingSessions.has(session.id)
 
-                        {/* Individual delete button for each session */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-all duration-300 hover:scale-110"
-                          onClick={(e) => handleDeleteSession(session.id, session.title, e)}
-                          title="Delete this chat"
+                  return (
+                    <div
+                      key={session.id}
+                      className={cn(
+                        "group relative flex items-start p-3 rounded-lg cursor-pointer transition-all duration-300 overflow-hidden",
+                        // Normal hover and selection states
+                        !isDeleting && "hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-[1.02]",
+                        // Current session highlighting
+                        currentSessionId === session.id &&
+                          !isDeleting &&
+                          "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 scale-[1.02]",
+                        // Deletion animation states
+                        isDeleting && [
+                          "animate-pulse",
+                          "scale-95",
+                          "opacity-50",
+                          "bg-red-50 dark:bg-red-900/20",
+                          "border border-red-200 dark:border-red-800",
+                          "transform transition-all duration-300 ease-in-out",
+                          "translate-x-4",
+                          "pointer-events-none",
+                        ],
+                      )}
+                      onClick={() => !isDeleting && onSessionSelect(session)}
+                      style={{
+                        // Additional inline styles for complex animations
+                        ...(isDeleting && {
+                          transform: "translateX(20px) scale(0.95)",
+                          opacity: "0.3",
+                        }),
+                      }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          {/* Session title with deletion state styling */}
+                          <h3
+                            className={cn(
+                              "text-sm font-medium truncate pr-2 theme-text transition-all duration-300",
+                              isDeleting
+                                ? "text-red-600 dark:text-red-400 line-through"
+                                : "text-slate-900 dark:text-slate-100",
+                            )}
+                          >
+                            {session.title}
+                          </h3>
+
+                          {/* Individual delete button for each session */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "h-6 w-6 p-0 transition-all duration-300 hover:scale-110",
+                              isDeleting
+                                ? "opacity-30 pointer-events-none"
+                                : "opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400",
+                            )}
+                            onClick={(e) => handleDeleteSession(session.id, session.title, e)}
+                            title="Delete this chat"
+                            disabled={isDeleting}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+
+                        {/* Session metadata with deletion state styling */}
+                        <div
+                          className={cn(
+                            "flex items-center text-xs theme-text transition-all duration-300",
+                            isDeleting
+                              ? "text-red-500 dark:text-red-400 opacity-60"
+                              : "text-slate-500 dark:text-slate-400",
+                          )}
                         >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                          <Clock className="w-3 h-3 mr-1 transition-all duration-300" />
+                          <span>{formatDistanceToNow(session.updatedAt, { addSuffix: true })}</span>
+                          <span className="mx-2">•</span>
+                          <span>{session.messages.length} messages</span>
+                        </div>
+
+                        {/* Preview of last message with deletion state styling */}
+                        {session.messages.length > 0 && (
+                          <p
+                            className={cn(
+                              "text-xs mt-1 truncate theme-text transition-all duration-300",
+                              isDeleting
+                                ? "text-red-400 dark:text-red-500 opacity-50"
+                                : "text-slate-400 dark:text-slate-500",
+                            )}
+                          >
+                            {session.messages[session.messages.length - 1]?.content.substring(0, 60)}...
+                          </p>
+                        )}
                       </div>
 
-                      {/* Session metadata */}
-                      <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 theme-text">
-                        <Clock className="w-3 h-3 mr-1 transition-all duration-300" />
-                        <span>{formatDistanceToNow(session.updatedAt, { addSuffix: true })}</span>
-                        <span className="mx-2">•</span>
-                        <span>{session.messages.length} messages</span>
-                      </div>
-
-                      {/* Preview of last message */}
-                      {session.messages.length > 0 && (
-                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 truncate theme-text">
-                          {session.messages[session.messages.length - 1]?.content.substring(0, 60)}...
-                        </p>
+                      {/* Deletion overlay effect */}
+                      {isDeleting && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-red-600/10 dark:from-red-400/10 dark:to-red-500/10 animate-pulse" />
                       )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </ScrollArea>

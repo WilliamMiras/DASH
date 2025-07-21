@@ -13,6 +13,7 @@ import { ChatStorage, type ChatSession } from "@/lib/chat-storage"
 import ChatSidebar from "@/components/chat-sidebar"
 import ThemeSlider from "@/components/theme-slider"
 import ThemeTransitionWrapper from "@/components/theme-transition-wrapper"
+import { LambdaTest } from "@/components/lambda-test"
 
 /**
  * Main AI Agent Interface Component
@@ -29,6 +30,8 @@ export default function AIAgentInterface() {
 
   // State to track if component has mounted (prevents hydration issues)
   const [mounted, setMounted] = useState(false)
+
+  const [showLambdaTest, setShowLambdaTest] = useState(false)
 
   // Reference to the scroll area for auto-scrolling to new messages
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -138,6 +141,12 @@ export default function AIAgentInterface() {
 
               {/* Theme toggle slider */}
               <ThemeSlider />
+              {/* Lambda Test Toggle - Remove in production */}
+              {process.env.NODE_ENV === "development" && (
+                <Button onClick={() => setShowLambdaTest(!showLambdaTest)} variant="outline" size="sm" className="ml-2">
+                  🧪 Lambda Test
+                </Button>
+              )}
             </div>
 
             {/* Main chat container */}
@@ -225,6 +234,20 @@ export default function AIAgentInterface() {
           </div>
         </div>
       </div>
+      {/* Lambda Test Panel - Remove in production */}
+      {showLambdaTest && process.env.NODE_ENV === "development" && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b p-4 flex justify-between items-center">
+              <h3 className="font-semibold">Lambda Integration Testing</h3>
+              <Button onClick={() => setShowLambdaTest(false)} variant="ghost" size="sm">
+                ✕
+              </Button>
+            </div>
+            <LambdaTest />
+          </div>
+        </div>
+      )}
     </ThemeTransitionWrapper>
   )
 }
