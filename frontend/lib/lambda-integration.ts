@@ -101,10 +101,7 @@ export class LambdaIntegration {
       const response = await fetch(lambdaEndpoint, {
         method: "POST",
         headers,
-        // 🎯 CRITICAL: Your Lambda expects { body: { query: "..." } }
-        body: JSON.stringify({
-          body: JSON.stringify(payload), // Double stringify to match your Lambda handler
-        }),
+        body: JSON.stringify(payload), // Send as flat JSON (no extra body wrapper)
         signal: controller.signal,
       })
 
@@ -261,4 +258,4 @@ export class LambdaIntegration {
       endpoint: endpoint || undefined,
     }
   }
-}
+} 
