@@ -23,24 +23,21 @@ export async function POST(req: Request) {
     try {
       // 🚀 LAMBDA INTEGRATION POINT #2: DASH Backend Invocation
       const lambdaResponse = await LambdaIntegration.scoutDatasets(userQuery);
-  
       if (lambdaResponse.success && lambdaResponse.data) {
-        console.log(`✅ [Chat API] DASH backend returned data, returning to frontend...`);
+        console.log(`✅ [Chat API] DASH backend returned data, streaming to frontend...`);
         const dashData = lambdaResponse.data;
-        return new Response(
-          JSON.stringify({
-            id: Date.now().toString(),
-            role: "assistant",
-            content: dashData.summary || "See details below.",
+        // Use streamText to stream the response as expected by the AI SDK
+        return streamText({
+          text: dashData.summary || "See details below.",
+          id: Date.now().toString(),
+          role: "assistant",
+          data: {
             summary: dashData.summary,
             relevancyExplained: dashData.relevancyExplained,
             sources: dashData.sources,
             tools_used: dashData.tools_used,
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
           }
+        });
         );
       } else {
         console.log(`⚠️ [Chat API] DASH backend returned no data or failed, using fallback message`);
