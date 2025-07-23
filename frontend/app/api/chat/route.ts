@@ -29,6 +29,7 @@ export async function POST(req: Request) {
         const dashData = lambdaResponse.data;
         return new Response(
           JSON.stringify({
+            id: Date.now().toString(),
             role: "assistant",
             content: dashData.summary || "See details below.",
             summary: dashData.summary,
