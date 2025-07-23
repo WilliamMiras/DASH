@@ -70,13 +70,23 @@ Format your response in a friendly, professional manner. Use markdown formatting
 Be enthusiastic and helpful, as you've successfully found relevant datasets for the user!`
 
         // Stream the AI response with DASH data
-        const result = streamText({
-          model: openai("gpt-4o"),
-          system: enhancedSystemPrompt,
-          messages,
-        })
-
-        return result.toDataStreamResponse()
+          return new Response(
+          JSON.stringify([
+            {
+              id: Date.now().toString(),
+              role: "assistant",
+              summary: dashData.summary,
+              relevancyExplained: dashData.relevancyExplained,
+              sources: dashData.sources,
+              tools_used: dashData.tools_used,
+              content: `Summary: ${dashData.summary}\n\nRelevancy: ${dashData.relevancyExplained}\n\nSources:\n${(dashData.sources || []).join('\n')}`,
+            },
+          ]),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        )
       } else {
         console.log(`⚠️ [Chat API] DASH backend returned no data or failed, using fallback message`)
 
@@ -97,23 +107,13 @@ Then offer to help the user in other ways, such as:
 
 Be apologetic but helpful, and maintain your friendly DASH personality.`
 
-        return new Response(
-          JSON.stringify([
-            {
-              id: Date.now().toString(),
-              role: "assistant",
-              summary: dashData.summary,
-              relevancyExplained: dashData.relevancyExplained,
-              sources: dashData.sources,
-              tools_used: dashData.tools_used,
-              content: `Summary: ${dashData.summary}\n\nRelevancy: ${dashData.relevancyExplained}\n\nSources:\n${(dashData.sources || []).join('\n')}`,
-            },
-          ]),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
-        )
+        const result = streamText({
+          model: openai("gpt-4o"),
+          system: errorSystemPrompt,
+          messages,
+        })
+
+        return result.toDataStreamResponse()
       }
     } catch (error) {
       console.error(`❌ [Chat API] DASH backend integration error:`, error)
