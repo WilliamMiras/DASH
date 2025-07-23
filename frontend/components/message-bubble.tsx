@@ -8,6 +8,10 @@ interface MessageBubbleProps {
     id: string
     role: "user" | "assistant"
     content: string
+    summary?: string
+    relevancyExplained?: string
+    sources?: string[]
+    tools_used?: string[]
   }
 }
 
@@ -51,7 +55,41 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 "bg-slate-100 hover:bg-slate-150 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-900 dark:text-slate-100 rounded-bl-md border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
           }`}
         >
-          <p className="whitespace-pre-wrap leading-relaxed text-sm">{message.content}</p>
+          {/* Render backend fields for assistant messages if present */}
+          {message.role === "assistant" && (message.summary || message.relevancyExplained || (message.sources && message.sources.length > 0) || (message.tools_used && message.tools_used.length > 0)) ? (
+            <div className="space-y-2 text-left">
+              {message.summary && (
+                <div>
+                  <div className="font-semibold text-blue-700 dark:text-blue-300">Summary</div>
+                  <div className="text-sm whitespace-pre-wrap">{message.summary}</div>
+                </div>
+              )}
+              {message.relevancyExplained && (
+                <div>
+                  <div className="font-semibold text-purple-700 dark:text-purple-300">Relevancy</div>
+                  <div className="text-sm whitespace-pre-wrap">{message.relevancyExplained}</div>
+                </div>
+              )}
+              {message.sources && message.sources.length > 0 && (
+                <div>
+                  <div className="font-semibold text-green-700 dark:text-green-300">Sources</div>
+                  <ul className="list-decimal list-inside text-sm">
+                    {message.sources.map((src, i) => (
+                      <li key={i}>{src}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {message.tools_used && message.tools_used.length > 0 && (
+                <div>
+                  <div className="font-semibold text-pink-700 dark:text-pink-300">Tools Used</div>
+                  <div className="text-sm">{message.tools_used.join(", ")}</div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="whitespace-pre-wrap leading-relaxed text-sm">{message.content}</p>
+          )}
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 px-2 theme-text">
           {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
