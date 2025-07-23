@@ -38,7 +38,6 @@ export async function POST(req: Request) {
             tools_used: dashData.tools_used,
           }
         });
-        );
       } else {
         console.log(`⚠️ [Chat API] DASH backend returned no data or failed, using fallback message`);
         const errorMessage =
