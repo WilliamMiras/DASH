@@ -28,8 +28,8 @@ export interface LambdaInvokeOptions {
  * Pulls configuration from Vercel Environment Variables.
  */
 export class LambdaIntegration {
-  private static readonly DEFAULT_TIMEOUT = 45000 // 45 seconds for dataset scouting
-  private static readonly DEFAULT_REGION = "us-east-1"
+  private static readonly DEFAULT_TIMEOUT = 90000 // 45 seconds for dataset scouting
+  private static readonly DEFAULT_REGION = "us-west-1"
 
   /**
    * Get the Lambda endpoint from Vercel Environment Variables
@@ -117,14 +117,24 @@ export class LambdaIntegration {
       const result = await response.json()
 
       console.log(`✅ [Lambda Integration] Success response from DASH:`, result)
+      console.log("Type of result:", typeof result, result);
+
+      // If the Lambda response is wrapped in a 'body' string, parse it
+      let parsedData = result;
+      if (typeof result.body === "string") {
+        try {
+          parsedData = JSON.parse(result.body);
+        } catch (e) {
+          console.warn("[Lambda Integration] Failed to parse result.body as JSON", e);
+        }
+      }
 
       // 📥 LAMBDA INTEGRATION: Handle your backend's response format
-      // Your Lambda returns the structured response directly or an error
-      if (result.error) {
-        console.warn(`⚠️ [Lambda Integration] Backend returned error:`, result.error)
+      if (parsedData.error) {
+        console.warn(`⚠️ [Lambda Integration] Backend returned error:`, parsedData.error)
         return {
           success: false,
-          error: result.error,
+          error: parsedData.error,
           message: "I'm sorry I must've tripped while I was scouting. Please refresh and try again.",
         }
       }
@@ -132,7 +142,7 @@ export class LambdaIntegration {
       // Your backend returns the DataQuery structure directly
       return {
         success: true,
-        data: result,
+        data: parsedData,
         message: "Successfully found dataset recommendations!",
       }
     } catch (error: any) {

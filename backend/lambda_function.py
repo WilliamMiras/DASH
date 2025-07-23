@@ -26,9 +26,10 @@ def lambda_handler(event, context):
         raw_response = agent_executor.invoke({"query": query})
         structured_response = parser.parse(raw_response["output"])
 
+        # Return the structured response as a top-level JSON object (not stringified)
         return {
             "statusCode": 200,
-            "body": json.dumps(structured_response.dict()),
+            "body": structured_response.json(),  # Pydantic's .json() returns a JSON string
             "headers": {"Content-Type": "application/json"}
         }
 
