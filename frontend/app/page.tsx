@@ -52,6 +52,9 @@ export default function AIAgentInterface() {
     // Don't save if component hasn't mounted or no messages exist
     if (!mounted || messages.length === 0) return
 
+    // Debug: Log messages to inspect structure
+    console.log("[DEBUG] Current chat messages:", messages)
+
     // Generate session ID if this is a new chat
     const sessionId = currentSessionId || `session-${Date.now()}`
     if (!currentSessionId) {
