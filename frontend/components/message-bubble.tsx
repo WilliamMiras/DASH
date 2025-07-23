@@ -12,6 +12,13 @@ interface MessageBubbleProps {
     relevancyExplained?: string
     sources?: string[]
     tools_used?: string[]
+    // Add data field for Vercel AI SDK compatibility
+    data?: {
+      summary?: string
+      relevancyExplained?: string
+      sources?: string[]
+      tools_used?: string[]
+    }
   }
 }
 
@@ -28,6 +35,12 @@ interface MessageBubbleProps {
 export function MessageBubble({ message }: MessageBubbleProps) {
   // Determine if this is a user message (vs AI assistant message)
   const isUser = message.role === "user"
+
+  // Support both top-level and .data fields for backend output
+  const summary = message.data?.summary ?? message.summary
+  const relevancyExplained = message.data?.relevancyExplained ?? message.relevancyExplained
+  const sources = message.data?.sources ?? message.sources
+  const tools_used = message.data?.tools_used ?? message.tools_used
 
   return (
     // Message container with conditional alignment
@@ -56,34 +69,34 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           }`}
         >
           {/* Render backend fields for assistant messages if present */}
-          {message.role === "assistant" && (message.summary || message.relevancyExplained || (message.sources && message.sources.length > 0) || (message.tools_used && message.tools_used.length > 0)) ? (
+          {message.role === "assistant" && (summary || relevancyExplained || (sources && sources.length > 0) || (tools_used && tools_used.length > 0)) ? (
             <div className="space-y-2 text-left">
-              {message.summary && (
+              {summary && (
                 <div>
                   <div className="font-semibold text-blue-700 dark:text-blue-300">Summary</div>
-                  <div className="text-sm whitespace-pre-wrap">{message.summary}</div>
+                  <div className="text-sm whitespace-pre-wrap">{summary}</div>
                 </div>
               )}
-              {message.relevancyExplained && (
+              {relevancyExplained && (
                 <div>
                   <div className="font-semibold text-purple-700 dark:text-purple-300">Relevancy</div>
-                  <div className="text-sm whitespace-pre-wrap">{message.relevancyExplained}</div>
+                  <div className="text-sm whitespace-pre-wrap">{relevancyExplained}</div>
                 </div>
               )}
-              {message.sources && message.sources.length > 0 && (
+              {sources && sources.length > 0 && (
                 <div>
                   <div className="font-semibold text-green-700 dark:text-green-300">Sources</div>
                   <ul className="list-decimal list-inside text-sm">
-                    {message.sources.map((src, i) => (
+                    {sources.map((src, i) => (
                       <li key={i}>{src}</li>
                     ))}
                   </ul>
                 </div>
               )}
-              {message.tools_used && message.tools_used.length > 0 && (
+              {tools_used && tools_used.length > 0 && (
                 <div>
                   <div className="font-semibold text-pink-700 dark:text-pink-300">Tools Used</div>
-                  <div className="text-sm">{message.tools_used.join(", ")}</div>
+                  <div className="text-sm">{tools_used.join(", ")}</div>
                 </div>
               )}
             </div>

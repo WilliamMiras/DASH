@@ -26,8 +26,9 @@ export async function POST(req: Request) {
       if (lambdaResponse.success && lambdaResponse.data) {
         console.log(`✅ [Chat API] DASH backend returned data, streaming to frontend...`);
         const dashData = lambdaResponse.data;
-        // Use streamText to stream the response as expected by the AI SDK
+        // Use streamText to stream the response as expected by the AI SDK, with specificationVersion
         return streamText({
+          specificationVersion: "v1",
           text: dashData.summary || "See details below.",
           id: Date.now().toString(),
           role: "assistant",
