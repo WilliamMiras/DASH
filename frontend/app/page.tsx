@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState, useRef } from "react"
 import { useChat } from "@ai-sdk/react"
 import { Button } from "@/components/ui/button"
@@ -22,7 +24,7 @@ import ThemeTransitionWrapper from "@/components/theme-transition-wrapper"
  */
 export default function AIAgentInterface() {
   // AI SDK hook for managing chat messages and streaming responses
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat()
+  const { messages = [], input = "", handleInputChange, handleSubmit, isLoading = false, setMessages } = useChat() || {}
 
   // State for tracking the current active chat session
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
@@ -98,6 +100,25 @@ export default function AIAgentInterface() {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
     }
   }, [messages])
+
+  // Safe input handling with fallback
+  const safeInput = input ?? ""
+
+  // Safe change handler with fallback
+  const safeHandleInputChange =
+    handleInputChange ||
+    ((e: React.ChangeEvent<HTMLInputElement>) => {
+      // Fallback handler if useChat doesn't provide one
+      console.warn("Input change handler not available")
+    })
+
+  // Safe submit handler with fallback
+  const safeHandleSubmit =
+    handleSubmit ||
+    ((e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault()
+      console.warn("Submit handler not available")
+    })
 
   return (
     <ThemeTransitionWrapper>
@@ -199,12 +220,12 @@ export default function AIAgentInterface() {
 
               {/* Input form for sending messages */}
               <div className="border-t border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 p-4 transition-all duration-400">
-                <form onSubmit={handleSubmit} className="flex space-x-3">
+                <form onSubmit={safeHandleSubmit} className="flex space-x-3">
                   {/* Text input field */}
                   <div className="flex-1 relative">
                     <Input
-                      value={input}
-                      onChange={handleInputChange}
+                      value={safeInput}
+                      onChange={safeHandleInputChange}
                       placeholder="Type your message..."
                       className="pr-12 h-12 rounded-full border-2 border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-slate-800 transition-all duration-300"
                       disabled={isLoading}
@@ -214,7 +235,7 @@ export default function AIAgentInterface() {
                   {/* Send button */}
                   <Button
                     type="submit"
-                    disabled={!input.trim() || isLoading}
+                    disabled={!safeInput.trim() || isLoading}
                     className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
                     <Send className="w-4 h-4" />
