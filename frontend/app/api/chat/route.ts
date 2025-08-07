@@ -1,16 +1,88 @@
 import { streamText } from "ai"
 import { openai } from "@ai-sdk/openai"
 
+/**
+ * Proxy to AWS Lambda for dataset scouting
+ *
+ * - Reads Lambda URL from Vercel Environment Variables (server-side only)
+ * - Forwards the user's query to Lambda
+ * - Returns the Lambda response as JSON directly to the client
+ *
+ *
+ * Optional fallbacks supported:
+ *   AWS_LAMBDA_DATASET_URL or NEXT_PUBLIC_LAMBDA_DATASET_URL
+ */
 export const maxDuration = 30
 
 export async function POST(req: Request) {
-  const { messages } = await req.json()
+  try {
+    const { query } = await req.json().catch(() => ({ query: "" }))
 
-  const result = streamText({
-    model: openai("gpt-4o"),
-    system: `You are a helpful and intelligent AI assistant. You provide thoughtful, accurate, and engaging responses. You're friendly but professional, and you adapt your communication style to be helpful for the user's needs. Keep your responses well-structured and easy to read.`,
-    messages,
-  })
+    if (!query || typeof query !== "string") {
+      return new Response(JSON.stringify({ error: "Missing 'query' in request body." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
 
-  return result.toDataStreamResponse()
+    const lambdaUrl =
+      process.env.LAMBDA_DATASET_URL ||
+      process.env.AWS_LAMBDA_DATASET_URL ||
+      process.env.NEXT_PUBLIC_LAMBDA_DATASET_URL
+
+    if (!lambdaUrl) {
+      return new Response(JSON.stringify({ error: "Lambda URL not configured. Set LAMBDA_DATASET_URL in Vercel." }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
+
+    // Call your Lambda with the expected payload
+    const lambdaRes = await fetch(lambdaUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // Your lambda_handler expects { body: '{"query": "..."}' } when behind API Gateway/Lambda URL,
+      // but AWS maps POST body directly to event.body string. Sending JSON here is correct.
+      body: JSON.stringify({ query }),
+    })
+
+    const text = await lambdaRes.text()
+
+    if (!lambdaRes.ok) {
+      // Try to pass through Lambda error details if present
+      let errJson: any = null
+      try {
+        errJson = JSON.parse(text)
+      } catch {
+        // keep text as-is
+      }
+
+      return new Response(
+        JSON.stringify({
+          error: "Lambda invocation failed",
+          status: lambdaRes.status,
+          details: errJson || text,
+        }),
+        { status: 502, headers: { "Content-Type": "application/json" } },
+      )
+    }
+
+    // Your Lambda returns Content-Type: application/json with a JSON string body
+    // which is the structured Pydantic response. Pass it through as JSON.
+    // If the body isn't valid JSON for some reason, return it as text/json anyway.
+    try {
+      JSON.parse(text) // validate
+      return new Response(text, { status: 200, headers: { "Content-Type": "application/json" } })
+    } catch {
+      return new Response(text, { status: 200, headers: { "Content-Type": "application/json" } })
+    }
+  } catch (error: any) {
+    return new Response(
+      JSON.stringify({
+        error: "Server error while proxying to Lambda",
+        message: error?.message || String(error),
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    )
+  }
 }
