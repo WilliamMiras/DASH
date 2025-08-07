@@ -47,10 +47,6 @@ function formatLambdaResponse(data: {
     parts.push(`Sources:\n${data.sources.map((s) => `- ${s}`).join("\n")}`)
   }
 
-  if (Array.isArray(data.tools_used) && data.tools_used.length) {
-    parts.push(`Tools used:\n${data.tools_used.map((t) => `- ${t}`).join("\n")}`)
-  }
-
   // Fallback if nothing matched
   if (parts.length === 0) {
     parts.push("I found results, but couldn't format them. Please try again.")
