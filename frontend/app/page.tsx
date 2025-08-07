@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useEffect, useState, useRef } from "react"
-import { useChat } from '@ai-sdk/react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -16,6 +15,14 @@ import ChatSidebar from "@/components/chat-sidebar"
 import ThemeSlider from "@/components/theme-slider"
 import ThemeTransitionWrapper from "@/components/theme-transition-wrapper"
 
+// Define message type
+interface Message {
+  id: string
+  role: "user" | "assistant"
+  content: string
+  createdAt: Date
+}
+
 /**
  * Main AI Agent Interface Component
  *
@@ -23,8 +30,10 @@ import ThemeTransitionWrapper from "@/components/theme-transition-wrapper"
  * It manages chat state, message history, and coordinates between the sidebar and main chat area.
  */
 export default function AIAgentInterface() {
-  // AI SDK hook for managing chat messages and streaming responses
-  const { messages = [], input = "", handleInputChange, handleSubmit, isLoading = false, setMessages } = useChat() || {}
+  // Local state for chat functionality
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   // State for tracking the current active chat session
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
@@ -61,10 +70,7 @@ export default function AIAgentInterface() {
     const session: ChatSession = {
       id: sessionId,
       title: ChatStorage.generateTitle(messages[0]?.content || "New Chat"),
-      messages: messages.map((msg) => ({
-        ...msg,
-        createdAt: new Date(),
-      })),
+      messages: messages,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -89,6 +95,7 @@ export default function AIAgentInterface() {
   const handleNewChat = () => {
     setCurrentSessionId(null)
     setMessages([])
+    setInput("")
   }
 
   /**
@@ -101,24 +108,124 @@ export default function AIAgentInterface() {
     }
   }, [messages])
 
-  // Safe input handling with fallback
-  const safeInput = input ?? ""
+  /**
+   * Handle input changes
+   */
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+  }
 
-  // Safe change handler with fallback
-  const safeHandleInputChange =
-    handleInputChange ||
-    ((e: React.ChangeEvent<HTMLInputElement>) => {
-      // Fallback handler if useChat doesn't provide one
-      console.warn("Input change handler not available")
-    })
+  /**
+   * Send message to AI and handle response
+   */
+  const sendMessage = async (userMessage: string) => {
+    if (!userMessage.trim()) return
 
-  // Safe submit handler with fallback
-  const safeHandleSubmit =
-    handleSubmit ||
-    ((e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault()
-      console.warn("Submit handler not available")
-    })
+    // Create user message
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: userMessage,
+      createdAt: new Date(),
+    }
+
+    // Add user message to chat
+    setMessages((prev) => [...prev, userMsg])
+    setInput("")
+    setIsLoading(true)
+
+    try {
+      // Send request to our API route
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [...messages, userMsg].map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error("No response body")
+      }
+
+      // Create assistant message
+      const assistantMsg: Message = {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "",
+        createdAt: new Date(),
+      }
+
+      // Add empty assistant message that we'll update
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === assistantMsg.id ? { ...msg, content: assistantMsg.content } : msg)),
+      )
+
+      // Read the stream
+      const decoder = new TextDecoder()
+      let assistantContent = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split("\n")
+
+        for (const line of lines) {
+          if (line.startsWith("0:")) {
+            try {
+              const data = JSON.parse(line.slice(2))
+              if (data.type === "text-delta" && data.textDelta) {
+                assistantContent += data.textDelta
+                // Update the assistant message content
+                setMessages((prev) =>
+                  prev.map((msg) => (msg.id === assistantMsg.id ? { ...msg, content: assistantContent } : msg)),
+                )
+              }
+            } catch (e) {
+              // Ignore parsing errors for malformed chunks
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error sending message:", error)
+
+      // Add error message
+      const errorMsg: Message = {
+        id: `error-${Date.now()}`,
+        role: "assistant",
+        content: "I'm sorry I must've tripped while I was scouting. Please refresh and try again.",
+        createdAt: new Date(),
+      }
+
+      setMessages((prev) => [...prev, errorMsg])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  /**
+   * Handle form submission
+   */
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (input.trim() && !isLoading) {
+      sendMessage(input.trim())
+    }
+  }
 
   return (
     <ThemeTransitionWrapper>
@@ -220,12 +327,12 @@ export default function AIAgentInterface() {
 
               {/* Input form for sending messages */}
               <div className="border-t border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 p-4 transition-all duration-400">
-                <form onSubmit={safeHandleSubmit} className="flex space-x-3">
+                <form onSubmit={handleSubmit} className="flex space-x-3">
                   {/* Text input field */}
                   <div className="flex-1 relative">
                     <Input
-                      value={safeInput}
-                      onChange={safeHandleInputChange}
+                      value={input}
+                      onChange={handleInputChange}
                       placeholder="Type your message..."
                       className="pr-12 h-12 rounded-full border-2 border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-slate-800 transition-all duration-300"
                       disabled={isLoading}
@@ -235,7 +342,7 @@ export default function AIAgentInterface() {
                   {/* Send button */}
                   <Button
                     type="submit"
-                    disabled={!safeInput.trim() || isLoading}
+                    disabled={!input.trim() || isLoading}
                     className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
                     <Send className="w-4 h-4" />
