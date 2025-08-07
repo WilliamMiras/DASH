@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     }
 
     const lambdaUrl =
-      process.env.LAMBDA_DATASET_URL ||
+      process.env.NEXT_PUBLIC_LAMBDA_ENDPOINT ||
       process.env.AWS_LAMBDA_DATASET_URL ||
       process.env.NEXT_PUBLIC_LAMBDA_DATASET_URL
 
