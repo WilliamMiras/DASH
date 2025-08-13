@@ -1,7 +1,7 @@
 
 # DASH
 
-DASH is a full-stack web application for interactive chat and data visualization. It consists of a Next.js/React frontend and a Python backend API. Below is a technical overview of the architecture, features, and setup instructions.
+DASH is a full-stack web application for interactive chat and data visualization. It consists of a Next.js/React frontend and a Python backend API. Below is a technical overview of the architecture, features, and setup instructions. https://dash-ai-williammiras-projects.vercel.app/
 
 ## Table of Contents
 - [Project Structure](#project-structure)
